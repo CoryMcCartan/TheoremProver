@@ -26,11 +26,18 @@ function collectConjunctions(set, expr) {
     else expr.args.map(collectConjunctions.bind(this, set)); // call recursively
 }
 
+function collectLiterals(set, expr) {
+    if (typeof expr === "string") set.add(expr);
+    else if (expr.action === NOT) set.add(expr.toString());
+    else if (expr.action === AND) throw new Error("No conjunctions allowed in application of resolution.");
+    else expr.args.map(collectLiterals.bind(this, set)); // call recursively
+}
+
 /*
  * Try to prove a statement. Returns true or false depending on the validity of
  * the expression (according to the knowledge base).
  */
-function prove(expression) {
+function prove(expression) { // TODO consider turning everything into lists of literals, sorted alphabetically
     // look at the union of the knowledge base and the negation of the expression,
     // and see if it is unsatisfiable (essentially proof by contradiction).
     let expr = new Expression(NOT, [expression]);
@@ -38,6 +45,8 @@ function prove(expression) {
 
     let test = database.slice();
     collectConjunctions(test, toCNF(expr));
+
+    let negate = l => l.startsWith("¬") ? l.slice(1) : "¬" + l;
 
     while (true) {
         let newClauses = [];
@@ -47,6 +56,7 @@ function prove(expression) {
         for (let i = 0; i < n; i++) {
             let A = test[i];
 
+            inner:
             for (let j = i+1; j < n; j++) {
                 let B = test[j];
 
@@ -57,6 +67,24 @@ function prove(expression) {
 
                 // already have this, not useful
                 if (strings.includes(result.toString())) continue;
+
+                if (result instanceof Expression) {
+                    // check if tautology
+                    let literals = new Set();
+                    collectLiterals(literals, result);
+                    for (let l of literals) {
+                        if (literals.has(negate(l))) // we have A OR NOT(A), so tautology
+                            continue inner;
+                    }
+                    // whether we already have a rearrangment of this statement
+                    literals = Array.from(literals);
+                    for (let exp of test) {
+                        let litExp = new Set();
+                        collectLiterals(litExp, exp);
+                        let same = literals.every(l => litExp.has(l));
+                        if (same) continue inner;
+                    }
+                } 
 
                 newClauses.push(result);
             }
@@ -77,20 +105,15 @@ function resolve(A, B) {
     // collect all disjunctions
     let A_vars = new Set();
     let B_vars = new Set();
-    let collectLiterals = function(set, expr) {
-        if (typeof expr === "string") set.add(expr);
-        else if (expr.action === NOT) set.add(expr.toString());
-        else if (expr.action === AND) throw new Error("No conjunctions allowed in application of resolution.");
-        else expr.args.map( collectLiterals.bind(this, set) ); // call recursively
-    }
     collectLiterals(A_vars, A);
     collectLiterals(B_vars, B);
 
     // determine which can be eliminated and which cannot
     let unique = new Set();
+    let negate = l => l.startsWith("¬") ? l.slice(1) : "¬" + l;
     for (let literal of A_vars) {
         // negate literal (and handle double negatives)
-        let negation = literal.startsWith("¬") ? literal.slice(1) : "¬" + literal;
+        let negation = negate(literal);
         let found = false;
 
         for (let other of B_vars) {
@@ -287,6 +310,11 @@ class Expression {
             return `¬${this.args[0].toString()}`;
         else
             return `(${this.args[0].toString()} ${translate(this.action)} ${this.args[1].toString()})`;
+    }
+
+    commute() {
+        this.args.reverse();
+        return this;
     }
     
     clone() {
