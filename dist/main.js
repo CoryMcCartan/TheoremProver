@@ -134,6 +134,10 @@ function facts(...expressions) {
     return database;
 }
 
+function clear() {
+    database = [];
+}
+
 function collectConjunctions(set, expr) {
     if (typeof expr === "string") set.push(expr);
     else if (expr.action !== AND) set.push(expr);
@@ -146,7 +150,6 @@ function extractLiterals(expr) {
     function helper(e) {
         if (typeof e === "string") set.add(e);
         else if (e.action === NOT) set.add(e.toString());
-        else if (e.action === AND) throw new Error("No conjunctions allowed in application of resolution.");
         else e.args.map(helper); // call recursively
     }
 
@@ -158,11 +161,10 @@ function extractLiterals(expr) {
  * Try to prove a statement. Returns true or false depending on the validity of
  * the expression (according to the knowledge base).
  */
-function prove(expression) { // TODO consider turning everything into lists of literals, sorted alphabetically
+function prove(expression) { 
     // look at the union of the knowledge base and the negation of the expression,
     // and see if it is unsatisfiable (essentially proof by contradiction).
     let expr = new Expression(NOT, [expression]);
-    if (database.includes(expr)) return true;
 
     let test = database.slice();
     collectConjunctions(test, toCNF(expr));
@@ -354,10 +356,10 @@ function distributeOr(expression) {
 
 module.exports = {
     facts,
+    clear,
     prove,
     Expression,
     parse: parser.parse,
-    resolve, // TODO remove
 };
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
