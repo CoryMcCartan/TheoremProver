@@ -1,15 +1,22 @@
 {
   "name": "theorem",
-  "version": "1.0.0",
-  "description": "",
+  "version": "0.0.8",
+  "description": "Automated theorem prover.",
   "main": "theorem.js",
   "scripts": {
-    "test": "mocha"
+    "test": "nyc --reporter=html --reporter=text mocha",
+    "build:compile": "browserify theorem.js -s theorem > dist/main.js",
+    "build:minify": "uglifyjs dist/main.js --lint -c > dist/main.min.js",
+    "build": "npm run build:compile && npm run build:minify",
+    "postbuild": "npm version patch --git-tag-version=false",
+    "clean": "rm dist/*"
   },
   "author": "Cory McCartan",
+  "repository": "https://github.com/CoryMcCartan/TheoremProver",
   "license": "ISC",
   "devDependencies": {
     "chai": "^3.5.0",
-    "mocha": "^3.2.0"
+    "mocha": "^3.2.0",
+    "nyc": "^10.1.2"
   }
 }
