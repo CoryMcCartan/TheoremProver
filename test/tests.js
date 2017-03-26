@@ -215,11 +215,13 @@ describe("prove()", function() {
     let proofs = [
         {from: ["A"], prove: "A", result: true},
         {from: ["A→B", "A"], prove: "B", result: true},
+        {from: ["!(!A)"], prove: "A", result: true},
         {from: ["A|B&C"], prove: "A|B&C", result: true},
         {from: ["A|B&C->D|(!E)", "A&C", "!D"], prove: "!E", result: true},
         {from: ["A→B", "B->C"], prove: "A->B", result: true},
         {from: [], prove: "A", result: false},
         {from: ["A→B"], prove: "C", result: false},
+        {from: ["A|(!A)"], prove: "B", result: false},
     ];
 
     proofs.forEach(function(test) {

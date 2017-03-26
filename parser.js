@@ -57,8 +57,8 @@ function parse(str) {
             else if (v === "∨" || v === "|") type = OR;
             else throw new Error(`Unrecognized operator: "${v}"`);
 
-            right = output.pop();
-            left = output.pop();
+            let right = output.pop();
+            let left = output.pop();
             expression = new Expression(type, [left, right]);
         }
 

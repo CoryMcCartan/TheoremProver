@@ -59,8 +59,8 @@ function parse(str) {
             else if (v === "∨" || v === "|") type = OR;
             else throw new Error(`Unrecognized operator: "${v}"`);
 
-            right = output.pop();
-            left = output.pop();
+            let right = output.pop();
+            let left = output.pop();
             expression = new Expression(type, [left, right]);
         }
 
@@ -242,15 +242,15 @@ function toCNF(expression) {
            eliminateDoubleNegations(
            applyDeMorgan(
            replaceImplications(
-           removeBijections(
+           removeBiconditionals(
                expression.clone()
            )))));
 }
 
-function removeBijections(expression) {
+function removeBiconditionals(expression) {
     if (typeof expression === "string") return expression;
 
-    // replace bijection with conjunction of implications
+    // replace biconditional with conjunction of implications
     if (expression.action === EQV) { 
         let AB = new Expression(IMPL, expression.args);
         let BA = new Expression(IMPL, [
@@ -260,7 +260,7 @@ function removeBijections(expression) {
         expression = new Expression(AND, [AB, BA]);
     }
 
-    expression.args = expression.args.map(removeBijections);
+    expression.args = expression.args.map(removeBiconditionals);
     return expression;
 }
 
