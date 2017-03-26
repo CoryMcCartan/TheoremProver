@@ -19,16 +19,27 @@ function facts(...expressions) {
     return database;
 }
 
+/*
+ * Clear the database of facts.
+ */
 function clear() {
     database = [];
 }
 
+/*
+ * Takes an expression (usually in CNF) and separates the expression by 
+ * first-level conjunctions. For example, (A AND B AND (C OR (D AND E) OR F)) 
+ * would return {A, B, C OR (D AND E) OR F}.
+ */
 function collectConjunctions(set, expr) {
     if (typeof expr === "string") set.push(expr);
     else if (expr.action !== AND) set.push(expr);
     else expr.args.map(collectConjunctions.bind(this, set)); // call recursively
 }
 
+/*
+ * Extracts a list of all literals used in an expession.
+ */
 function extractLiterals(expr) {
     let set = new Set();
 
@@ -51,15 +62,17 @@ function prove(expression) {
     // and see if it is unsatisfiable (essentially proof by contradiction).
     let expr = new Expression(NOT, [expression]);
 
-    let test = database.slice();
-    collectConjunctions(test, toCNF(expr));
+    let test = database.slice(); // make a copy of the database
+    collectConjunctions(test, toCNF(expr)); // add our test expression in CNF
 
+    // we only need concern ourselves with the literals at this point, since
+    // the disjunctions are implied (everything in CNF)
     let clauses = test.map(extractLiterals);
 
     while (true) {
-        let newClauses = [];
+        let newClauses = []; // any new clauses derived this round
         let n = clauses.length;
-        // for every pair
+        // for every pair of clauses
         for (let i = 0; i < n; i++) {
             let A = clauses[i];
 
@@ -67,6 +80,7 @@ function prove(expression) {
             for (let j = i+1; j < n; j++) {
                 let B = clauses[j];
 
+                // derive a new clause
                 let result = resolve(A, B); 
 
                 // contradiction!!!
@@ -86,14 +100,15 @@ function prove(expression) {
                     if (leftContain && rightContain) continue inner;
                 }
 
+                // save new, original clauses
                 newClauses.push(result);
             }
         }
 
-        // we've tried everything; no proof
+        // we've tried everything, and no new claues; no proof
         if (newClauses.length === 0) return false;
 
-        clauses = clauses.concat(newClauses);
+        clauses = clauses.concat(newClauses); // add new clauses to facts database
     }
 }
 
